@@ -1,0 +1,30 @@
+name: Deploy Node.js App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '22.11.0'
+
+    - name: Install Dependencies
+      run: npm install
+
+    - name: Run the Application
+      env: 
+        WP_USERNAME: ${{ secrets.WP_USERNAME }}
+        WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+        WP_PASSWORD_LOGIN: ${{ secrets.WP_PASSWORD_LOGIN }}
+        APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+      run: node server.js

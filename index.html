@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Upload</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="min-h-screen bg-gray-50">
+    <div class="max-w-2xl mx-auto p-8">
+        <div class="bg-white rounded-lg shadow-lg p-8">
+            <div class="flex items-center mb-6">
+                <i data-lucide="file-text" class="w-8 h-8 text-blue-600 mr-3"></i>
+                <h1 class="text-2xl font-bold text-gray-800">Upload PDF</h1>
+            </div>
+
+            <div class="mb-8">
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors cursor-pointer" id="dropZone">
+                    <input type="file" id="fileInput" accept=".pdf" class="hidden">
+                    <i data-lucide="upload-cloud" class="w-12 h-12 mx-auto mb-4 text-gray-400"></i>
+                    <p class="text-gray-600 mb-2">Drag and drop your PDF here or</p>
+                    <button class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors" onclick="document.getElementById('fileInput').click()">
+                        Browse Files
+                    </button>
+                    <p class="text-sm text-gray-500 mt-2">Maximum file size: 10MB</p>
+                </div>
+                <div id="selectedFile" class="hidden mt-4">
+                    <div class="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
+                        <div class="flex items-center">
+                            <i data-lucide="file" class="w-5 h-5 text-gray-500 mr-2"></i>
+                            <span id="fileName" class="text-gray-700"></span>
+                        </div>
+                        <button onclick="clearFile()" class="text-red-500 hover:text-red-700">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="submitButton" class="hidden mt-4">
+                    <button onclick="handleSubmit()" class="w-full bg-green-600 text-white px-6 py-3 rounded-md hover:bg-green-700 transition-colors flex items-center justify-center">
+                        <i data-lucide="upload" class="w-5 h-5 mr-2"></i>
+                        Start Upload
+                    </button>
+                </div>
+            </div>
+
+            <div class="space-y-6" id="progressSteps">
+                <div class="step">
+                    <div class="flex items-center mb-2">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center mr-3 bg-gray-100" id="step1Icon">
+                            <span class="text-gray-400">1</span>
+                        </div>
+                        <span class="font-medium text-gray-700">Uploading file</span>
+                    </div>
+                    <div class="ml-11">
+                        <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-blue-600 rounded-full w-0 transition-all duration-300" id="step1Progress"></div>
+                        </div>
+                        <span class="text-sm text-gray-500 step-status" id="step1Status">Pending</span>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="flex items-center mb-2">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center mr-3 bg-gray-100" id="step2Icon">
+                            <span class="text-gray-400">2</span>
+                        </div>
+                        <span class="font-medium text-gray-700">Updating page content</span>
+                    </div>
+                    <div class="ml-11">
+                        <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-blue-600 rounded-full w-0 transition-all duration-300" id="step2Progress"></div>
+                        </div>
+                        <span class="text-sm text-gray-500 step-status" id="step2Status">Pending</span>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="flex items-center mb-2">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center mr-3 bg-gray-100" id="step3Icon">
+                            <span class="text-gray-400">3</span>
+                        </div>
+                        <span class="font-medium text-gray-700">Adding to flipbook</span>
+                    </div>
+                    <div class="ml-11">
+                        <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-blue-600 rounded-full w-0 transition-all duration-300" id="step3Progress"></div>
+                        </div>
+                        <span class="text-sm text-gray-500 step-status" id="step3Status">Pending</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script type="module"  src="script.js"></script>
+
+</body>
+</html>
