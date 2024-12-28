@@ -250,7 +250,7 @@ const updatePageTwoWithPDF = async (pageId, newPdfLink, pdfTitle) => {
 };
 
 const addToFlipbook = async (pdfUrl, title, retries = 0) => {
-  const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch({headless:false});
   const page = await browser.newPage();
   const FLIPBOOK_ID = generateFlipbookId();
 
