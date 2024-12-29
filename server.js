@@ -269,7 +269,7 @@ const addToFlipbook = async (pdfUrl, title, retries = 0) => {
           '--no-zygote',
           '--single-process'
         ],
-        executablePath: '/usr/bin/chromium-browser'
+        executablePath: '/opt/render/.cache/puppeteer/chrome/linux-127.0.6533.88/chrome-linux64/chrome'
       };
     }
   };
