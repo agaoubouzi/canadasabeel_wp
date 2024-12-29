@@ -249,7 +249,6 @@ const updatePageTwoWithPDF = async (pageId, newPdfLink, pdfTitle) => {
 
 const addToFlipbook = async (pdfUrl, title, retries = 0) => {
 
-  const isProd = process.env.NODE_ENV === 'development';
   const getBrowserOptions = () => {
     if (process.env.NODE_ENV === 'development') {
       return {
@@ -275,12 +274,14 @@ const addToFlipbook = async (pdfUrl, title, retries = 0) => {
     }
   };
 
+  
+  const browser = await puppeteer.launch(getBrowserOptions());
+
+  const page = await browser.newPage();
+  const FLIPBOOK_ID = generateFlipbookId();
+
   try {
 
-    const browser = await puppeteer.launch(getBrowserOptions());
-
-    const page = await browser.newPage();
-    const FLIPBOOK_ID = generateFlipbookId();
     console.log('logging in to WordPress');
 
    
