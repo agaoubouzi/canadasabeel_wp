@@ -273,12 +273,13 @@ const addToFlipbook = async (pdfUrl, title, retries = 0) => {
       };
     }
   };
-  const browser = await puppeteer.launch(getBrowserOptions());
-
-  const page = await browser.newPage();
-  const FLIPBOOK_ID = generateFlipbookId();
 
   try {
+
+    const browser = await puppeteer.launch(getBrowserOptions());
+
+    const page = await browser.newPage();
+    const FLIPBOOK_ID = generateFlipbookId();
     console.log('logging in to WordPress');
 
    
