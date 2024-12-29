@@ -248,54 +248,60 @@ const updatePageTwoWithPDF = async (pageId, newPdfLink, pdfTitle) => {
 };
 
 const addToFlipbook = async (pdfUrl, title, retries = 0) => {
-
-  const getBrowserOptions = () => {
-    if (process.env.NODE_ENV === 'development') {
-      return {
-        headless: 'new',
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      };
-    } else {
-      const chromePath = '/opt/render/.cache/puppeteer/chrome/linux-127.0.6533.88/chrome-linux64/chrome';
-      console.log('Chrome path:', chromePath);
-      
-      return {
-        headless: 'new',
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-gpu',
-          '--no-zygote',
-          '--single-process'
-        ],
-        executablePath: chromePath
-      };
-    }
-  };
-
-  
-  const browser = await puppeteer.launch(getBrowserOptions());
-
-  const page = await browser.newPage();
-  const FLIPBOOK_ID = generateFlipbookId();
-
+  let browser;
   try {
+    console.log('Launching browser...');
+    
+    const launchOptions = {
+      headless: 'new',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-extensions'
+      ]
+    };
 
-    console.log('logging in to WordPress');
+    // Log the launch options for debugging
+    console.log('Launch options:', JSON.stringify(launchOptions, null, 2));
 
-   
+    browser = await puppeteer.launch(launchOptions);
+    console.log('Browser launched successfully');
 
-    await page.goto('https://www.canadasabeel.com/wp-login.php');
-    // Wait for 2 seconds before typing
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const page = await browser.newPage();
+    const FLIPBOOK_ID = generateFlipbookId();
+
+    // Set longer timeouts for navigation
+    page.setDefaultNavigationTimeout(60000); // 60 seconds
+    page.setDefaultTimeout(60000);
+
+    console.log('Navigating to WordPress login...');
+    await page.goto('https://www.canadasabeel.com/wp-login.php', {
+      waitUntil: 'networkidle0',
+      timeout: 60000
+    });
+
+    // Add a delay before typing
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    console.log('Logging in...');
     await page.type('#user_login', WP_USERNAME, { delay: 100 });
     await page.type('#user_pass', WP_PASSWORD_LOGIN, { delay: 100 });
-    await page.click('#wp-submit');
-    await page.waitForNavigation();
-    console.log('Logged in to WordPress');
+    
+    await Promise.all([
+      page.click('#wp-submit'),
+      page.waitForNavigation({ waitUntil: 'networkidle0' })
+    ]);
+    
+    console.log('Successfully logged in');
 
-    await page.goto('https://www.canadasabeel.com/wp-admin/admin.php?page=real3d_flipbook_admin');
+    await page.goto('https://www.canadasabeel.com/wp-admin/admin.php?page=real3d_flipbook_admin', {
+      waitUntil: 'networkidle0'
+    });
     
     const flipbookExists = await page.evaluate((title) => {
       const rows = document.querySelectorAll('#the-list tr');
@@ -313,40 +319,57 @@ const addToFlipbook = async (pdfUrl, title, retries = 0) => {
       return { success: true, message: 'Flipbook already exists. Skipping flipbook creation.', alreadyExists: true };
     }
 
-    await page.goto(`https://www.canadasabeel.com/wp-admin/admin.php?page=real3d_flipbook_admin&action=add_new#pages`);
+    await page.goto(`https://www.canadasabeel.com/wp-admin/admin.php?page=real3d_flipbook_admin&action=add_new#pages`, {
+      waitUntil: 'networkidle0'
+    });
+    
     console.log('On flipbook page');
 
+    // Wait for title input to be available
+    await page.waitForSelector('#titlewrap input');
     const real3dflipbookInput = await page.$eval('#titlewrap input', (input) => input.value);
+    real3dflipbookId = real3dflipbookInput.replace(/\D/g, '');
 
-    // Use a regular expression to extract only the numbers from the string
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-
-    real3dflipbookId = real3dflipbookInput.replace(/\D/g, '');// \D matches any non-digit character
-
-
+    // Wait for PDF URL input and type the URL
+    await page.waitForSelector('input[name="pdfUrl"]');
     await page.type('input[name="pdfUrl"]', pdfUrl);
     
     console.log('Filled flipbook details');
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    
+    // Add delay before submitting
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
     await page.click('input[name="btbsubmit"][value="Publish"]');
     console.log('Submitted flipbook');
 
-    await page.waitForSelector('.notice-info');
+    // Wait for success notice
+    await page.waitForSelector('.notice-info', { timeout: 30000 });
 
     await browser.close();
-    return { success: true, message: 'PDF added to flipbook successfully', flipbookId: FLIPBOOK_ID, alreadyExists: false };
+    return { 
+      success: true, 
+      message: 'PDF added to flipbook successfully', 
+      flipbookId: FLIPBOOK_ID,
+      alreadyExists: false 
+    };
+
   } catch (error) {
-    console.error('Error adding PDF to flipbook:', error);
+    console.error('Error in flipbook process:', error);
+    
+    if (browser) {
+      try {
+        await browser.close();
+      } catch (closeError) {
+        console.error('Error closing browser:', closeError);
+      }
+    }
 
     if (retries > 0) {
       console.log(`Retrying... (${retries} attempts left)`);
-      await browser.close();
       return addToFlipbook(pdfUrl, title, retries - 1);
-    } else {
-      await browser.close();
-      return { success: false, message: error.message };
     }
+
+    throw error;
   }
 };
 
