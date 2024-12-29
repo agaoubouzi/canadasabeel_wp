@@ -5,7 +5,6 @@ const fs = require('fs');
 const FormData = require('form-data');
 const dotenv = require('dotenv');
 const puppeteer = require('puppeteer');
-const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
 
 // Load environment variables
@@ -255,16 +254,19 @@ const addToFlipbook = async (pdfUrl, title, retries = 0) => {
     if (process.env.NODE_ENV === 'development') {
       // Local development settings
       return {
+        headless: 'new',
         args: ['--no-sandbox', '--disable-setuid-sandbox']
-        // Don't specify executablePath for local development
       };
     } else {
       // Production (Render) settings
       return {
+        headless: 'new',
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--no-zygote',
           '--single-process'
         ],
         executablePath: '/usr/bin/chromium-browser'

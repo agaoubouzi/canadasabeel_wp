@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: canadasabeel_wp
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+    packages:
+      - chromium
+      - chromium-driver
