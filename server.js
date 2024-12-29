@@ -8,72 +8,69 @@ const puppeteer = require('puppeteer');
 const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
 
-
-
+// Load environment variables
 dotenv.config({ path: `${__dirname}/config.env` });
 
 const WP_USERNAME = process.env.WP_USERNAME;
 const WP_APP_PASSWORD = process.env.WP_PASSWORD;
-const WP_PASSWORD_LOGIN = process.env.WP_PASSWORD_LOGIN
+const WP_PASSWORD_LOGIN = process.env.WP_PASSWORD_LOGIN;
 const APP_PASSWORD = process.env.APP_PASSWORD;
 const WP_PAGE_1_ID = 1272; // The ID of the page to update (أرشيف ساخر)
 const WP_PAGE_2_ID = 1262; // The ID of the page to update (ساخر الورقية)
-var   real3dflipbookId = 20
-
-// [pdf-embedder url="https://www.canadasabeel.com/wp-content/uploads/2024/11/147.pdf"]
-// [real3dflipbook id="67"]
-
+var real3dflipbookId = 20; // Adjust as needed
 
 // Session management
 const session = require('express-session');
 
-
 const app = express();
 const upload = multer({ dest: 'uploads/' });
+
+// Enable 'trust proxy' for handling X-Forwarded-For header in a reverse proxy environment (required for rate-limiting)
+app.set('trust proxy', 1); // Trust the first proxy
 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'fallback-secret-key',
   resave: false,
   saveUninitialized: false,
   cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
 
 app.use(express.json());
 
+// Define rate limiting for password attempts
 const passwordAttemptLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // limit each IP to 5 requests per windowMs
+  max: 10, // Limit each IP to 10 requests per windowMs
   message: 'Too many password attempts, please try again later'
 });
 
 // Middleware to check authentication
 const checkAuth = (req, res, next) => {
   if (req.session.isAuthenticated) {
-      next();
+    next();
   } else {
-      res.status(401).json({ message: 'Unauthorized' });
+    res.status(401).json({ message: 'Unauthorized' });
   }
 };
 
-// Endpoint to handle password validation securely
 // Password verification endpoint with rate limiting
 app.post('/verify-password', passwordAttemptLimiter, (req, res) => {
   const { password } = req.body;
 
   if (!password) {
-      return res.status(400).json({ message: 'Password is required' });
+    return res.status(400).json({ message: 'Password is required' });
   }
 
   // Compare the provided password with the environment variable
   if (password === APP_PASSWORD) {
-      req.session.isAuthenticated = true;
-      return res.status(200).json({ message: 'Password is correct' });
+    req.session.isAuthenticated = true;
+    return res.status(200).json({ message: 'Password is correct' });
   } else {
-      return res.status(403).json({ message: 'Invalid password' });
+    return res.status(403).json({ message: 'Invalid password' });
   }
 });
 
@@ -94,6 +91,7 @@ const checkFileExists = async (filename) => {
   }
 };
 
+// Upload PDF file to WordPress
 // Function to fetch data from an API and return the first PDF URL and its name
 async function getOldPdf(pageId) {
   try {
@@ -168,6 +166,7 @@ const uploadPDF = async (filePath, filename) => {
   }
 };
 
+// Update a WordPress page with the new PDF link
 const getPageContent = async (pageId) => {
   try {
     const response = await axios.get(`https://www.canadasabeel.com/wp-json/wp/v2/pages/${pageId}`, {
@@ -183,26 +182,26 @@ const getPageContent = async (pageId) => {
 };
 
 const updatePageOneWithPDF = async (pageId, newPdfLink, pdfTitle) => {
-  const pageContentResult = await getPageContent(pageId);
-  if (!pageContentResult.success) {
-    return { success: false, message: pageContentResult.message };
-  }
+    const pageContentResult = await getPageContent(pageId);
+    if (!pageContentResult.success) {
+      return { success: false, message: pageContentResult.message };
+    }
 
-  const currentContent = pageContentResult.data;
+    const currentContent = pageContentResult.data;
 
-  if (currentContent.includes(pdfTitle)) {
-    console.log('PDF already exists in the page content. Skipping page update.');
-    return { success: true, message: 'PDF already exists in the page content. Skipping page update.', alreadyExists: true };
-  }
+    if (currentContent.includes(pdfTitle)) {
+      console.log('PDF already exists in the page content. Skipping page update.');
+      return { success: true, message: 'PDF already exists in the page content. Skipping page update.', alreadyExists: true };
+    }
 
 
-  const newListItem = `<li><a href="${newPdfLink}">${pdfTitle}</a></li>`;
-  const updatedContent = currentContent.replace(
-    /(<ul[^>]*>)(.*?)(<\/ul>)/s,
-    `$1${newListItem}$2$3`
-  );
+    const newListItem = `<li><a href="${newPdfLink}">${pdfTitle}</a></li>`;
+    const updatedContent = currentContent.replace(
+      /(<ul[^>]*>)(.*?)(<\/ul>)/s,
+      `$1${newListItem}$2$3`
+    );
 
-  try {
+    try {
     const response = await axios.post(`https://www.canadasabeel.com/wp-json/wp/v2/pages/${pageId}`, {
       content: updatedContent
     }, {
@@ -369,63 +368,64 @@ app.use(express.static(__dirname));
 app.post('/upload', checkAuth, upload.single('file'), async (req, res) => {
   const file = req.file;
   if (!file) {
-      return res.status(400).json({ message: 'No file uploaded.' });
+    return res.status(400).json({ message: 'No file uploaded.' });
   }
 
   try {
-      const result = await uploadPDF(file.path, file.originalname);
+    const result = await uploadPDF(file.path, file.originalname);
 
-      // Clean up uploaded file
-      fs.unlinkSync(file.path);
+    // Clean up uploaded file
+    fs.unlinkSync(file.path);
 
-      if (result.success) {
-          const pdfUrl = result.alreadyExists ? 
-              await getPdfUrl(file.originalname) : 
-              result.data.source_url;
-          
-          const OldPdfUrl = await getOldPdf(WP_PAGE_2_ID);
-          const uploadResult = await addToPostsAndFlipbook(pdfUrl, file.originalname, OldPdfUrl);
-          
-          if (uploadResult.success) {
-              uploadResult.data.fileUpload = !result.alreadyExists;
-              return res.json(uploadResult);
-          } else {
-              return res.status(500).json({ message: uploadResult.message });
-          }
+    if (result.success) {
+      const pdfUrl = result.alreadyExists ? 
+          await getPdfUrl(file.originalname) : 
+          result.data.source_url;
+      
+      const OldPdfUrl = await getOldPdf(WP_PAGE_2_ID);
+      const uploadResult = await addToPostsAndFlipbook(pdfUrl, file.originalname, OldPdfUrl);
+      
+      if (uploadResult.success) {
+          uploadResult.data.fileUpload = !result.alreadyExists;
+          return res.json(uploadResult);
       } else {
-          return res.status(500).json({ message: result.message });
+          return res.status(500).json({ message: uploadResult.message });
       }
+  } else {
+      return res.status(500).json({ message: result.message });
+  }
   } catch (error) {
-      // Clean up uploaded file in case of error
-      if (fs.existsSync(file.path)) {
-          fs.unlinkSync(file.path);
-      }
-      return res.status(500).json({ 
-          message: 'An error occurred while processing the file.',
-          error: error.message 
-      });
+    // Clean up uploaded file in case of error
+    if (fs.existsSync(file.path)) {
+      fs.unlinkSync(file.path);
+    }
+    return res.status(500).json({
+      message: 'An error occurred while processing the file.',
+      error: error.message
+    });
   }
 });
 
 // Logout endpoint
 app.post('/logout', (req, res) => {
   req.session.destroy((err) => {
-      if (err) {
-          return res.status(500).json({ message: 'Error logging out' });
-      }
-      res.json({ message: 'Logged out successfully' });
+    if (err) {
+      return res.status(500).json({ message: 'Error logging out' });
+    }
+    res.json({ message: 'Logged out successfully' });
   });
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ 
-      message: 'Something went wrong!',
-      error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+  res.status(500).json({
+    message: 'Something went wrong!',
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
   });
 });
 
+// Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
