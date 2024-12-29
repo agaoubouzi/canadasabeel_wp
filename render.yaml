@@ -2,11 +2,12 @@ services:
   - type: web
     name: canadasabeel_wp
     env: node
-    buildCommand: npm install
+    buildCommand: |
+      apt-get update && apt-get install -y chromium chromium-driver
+      npm install
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
-    packages:
-      - chromium
-      - chromium-driver
+      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
+        value: true

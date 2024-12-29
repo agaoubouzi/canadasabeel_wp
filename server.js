@@ -252,13 +252,14 @@ const addToFlipbook = async (pdfUrl, title, retries = 0) => {
   const isProd = process.env.NODE_ENV === 'development';
   const getBrowserOptions = () => {
     if (process.env.NODE_ENV === 'development') {
-      // Local development settings
       return {
         headless: 'new',
         args: ['--no-sandbox', '--disable-setuid-sandbox']
       };
     } else {
-      // Production (Render) settings
+      const chromePath = '/opt/render/.cache/puppeteer/chrome/linux-127.0.6533.88/chrome-linux64/chrome';
+      console.log('Chrome path:', chromePath);
+      
       return {
         headless: 'new',
         args: [
@@ -269,7 +270,7 @@ const addToFlipbook = async (pdfUrl, title, retries = 0) => {
           '--no-zygote',
           '--single-process'
         ],
-        executablePath: '/opt/render/.cache/puppeteer/chrome/linux-127.0.6533.88/chrome-linux64/chrome'
+        executablePath: chromePath
       };
     }
   };
