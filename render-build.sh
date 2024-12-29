@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 set -o errexit
 
-# Install dependencies
+echo "Starting render-build.sh script..." # Add this line
+
 npm install
 
-# Ensure the Puppeteer cache directory exists
+echo "npm install complete." # Add this line
+
 PUPPETEER_CACHE_DIR=/opt/render/.cache/puppeteer
 mkdir -p $PUPPETEER_CACHE_DIR
 
-# Install Puppeteer and download Chrome
+echo "Created cache directory: $PUPPETEER_CACHE_DIR" # Add this line
+
 npx puppeteer browsers install chrome
+
+echo "Puppeteer Chrome installation complete." # Add this line
