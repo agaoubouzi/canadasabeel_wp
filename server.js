@@ -250,7 +250,25 @@ const updatePageTwoWithPDF = async (pageId, newPdfLink, pdfTitle) => {
 };
 
 const addToFlipbook = async (pdfUrl, title, retries = 0) => {
-  const browser = await puppeteer.launch({headless:false});
+
+  const isProd = process.env.NODE_ENV === 'development';
+  const getBrowserOptions = () => {
+    if (isProd) {
+      // Production (Render) settings
+      return {
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        executablePath: '/usr/bin/chromium'
+      };
+    } else {
+      // Local development settings
+      return {
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        // Don't specify executablePath - let Puppeteer use its bundled Chrome
+      };
+    }
+  };
+  const browser = await puppeteer.launch(getBrowserOptions());
+
   const page = await browser.newPage();
   const FLIPBOOK_ID = generateFlipbookId();
 
